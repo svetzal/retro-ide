@@ -175,6 +175,64 @@ async fn read_file_contents(path: String) -> Result<String, String> {
     fs::read_to_string(path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn write_file_contents(path: String, contents: String) -> Result<(), String> {
+    let path = Path::new(&path);
+
+    // Create parent directories if they don't exist
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+    }
+
+    fs::write(path, contents).map_err(|e| e.to_string())
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FileData {
+    pub data: String,
+    pub mime_type: String,
+}
+
+#[tauri::command]
+async fn read_file_binary(path: String) -> Result<FileData, String> {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+
+    let file_path = Path::new(&path);
+
+    if !file_path.exists() {
+        return Err("File does not exist".to_string());
+    }
+
+    if !file_path.is_file() {
+        return Err("Path is not a file".to_string());
+    }
+
+    let bytes = fs::read(file_path).map_err(|e| e.to_string())?;
+    let data = STANDARD.encode(&bytes);
+
+    // Determine MIME type from extension
+    let mime_type = match file_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .as_deref()
+    {
+        Some("png") => "image/png",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        Some("bmp") => "image/bmp",
+        Some("ico") => "image/x-icon",
+        Some("svg") => "image/svg+xml",
+        _ => "application/octet-stream",
+    }
+    .to_string();
+
+    Ok(FileData { data, mime_type })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -185,23 +243,72 @@ pub fn run() {
             project: Mutex::new(ProjectState::default()),
         })
         .setup(|app| {
-            // Create menu items
+            // App menu items (macOS "Retro IDE" menu)
+            let about = MenuItemBuilder::with_id("about", "About Retro IDE").build(app)?;
+
+            // File menu items
             let open_project = MenuItemBuilder::with_id("open_project", "Open Project...")
                 .accelerator("CmdOrCtrl+O")
                 .build(app)?;
             let close_project =
                 MenuItemBuilder::with_id("close_project", "Close Project").build(app)?;
+            let save_file = MenuItemBuilder::with_id("save_file", "Save")
+                .accelerator("CmdOrCtrl+S")
+                .build(app)?;
+
+            // Edit menu items
+            let undo = MenuItemBuilder::with_id("undo", "Undo")
+                .accelerator("CmdOrCtrl+Z")
+                .build(app)?;
+            let redo = MenuItemBuilder::with_id("redo", "Redo")
+                .accelerator("CmdOrCtrl+Shift+Z")
+                .build(app)?;
+            let cut = MenuItemBuilder::with_id("cut", "Cut")
+                .accelerator("CmdOrCtrl+X")
+                .build(app)?;
+            let copy = MenuItemBuilder::with_id("copy", "Copy")
+                .accelerator("CmdOrCtrl+C")
+                .build(app)?;
+            let paste = MenuItemBuilder::with_id("paste", "Paste")
+                .accelerator("CmdOrCtrl+V")
+                .build(app)?;
+            let select_all = MenuItemBuilder::with_id("select_all", "Select All")
+                .accelerator("CmdOrCtrl+A")
+                .build(app)?;
+
+            // Build App submenu (macOS application menu)
+            let app_menu = SubmenuBuilder::new(app, "Retro IDE")
+                .item(&about)
+                .separator()
+                .quit()
+                .build()?;
 
             // Build File submenu
             let file_menu = SubmenuBuilder::new(app, "File")
                 .item(&open_project)
                 .item(&close_project)
                 .separator()
-                .quit()
+                .item(&save_file)
+                .build()?;
+
+            // Build Edit submenu
+            let edit_menu = SubmenuBuilder::new(app, "Edit")
+                .item(&undo)
+                .item(&redo)
+                .separator()
+                .item(&cut)
+                .item(&copy)
+                .item(&paste)
+                .separator()
+                .item(&select_all)
                 .build()?;
 
             // Build the full menu
-            let menu = MenuBuilder::new(app).item(&file_menu).build()?;
+            let menu = MenuBuilder::new(app)
+                .item(&app_menu)
+                .item(&file_menu)
+                .item(&edit_menu)
+                .build()?;
 
             // Set the menu
             app.set_menu(menu)?;
@@ -212,12 +319,31 @@ pub fn run() {
             let id = event.id().as_ref();
             match id {
                 "open_project" => {
-                    // Emit event to frontend to trigger open project dialog
                     let _ = app.emit("menu-open-project", ());
                 }
                 "close_project" => {
-                    // Emit event to frontend to trigger close project
                     let _ = app.emit("menu-close-project", ());
+                }
+                "save_file" => {
+                    let _ = app.emit("menu-save-file", ());
+                }
+                "undo" => {
+                    let _ = app.emit("menu-undo", ());
+                }
+                "redo" => {
+                    let _ = app.emit("menu-redo", ());
+                }
+                "cut" => {
+                    let _ = app.emit("menu-cut", ());
+                }
+                "copy" => {
+                    let _ = app.emit("menu-copy", ());
+                }
+                "paste" => {
+                    let _ = app.emit("menu-paste", ());
+                }
+                "select_all" => {
+                    let _ = app.emit("menu-select-all", ());
                 }
                 _ => {}
             }
@@ -228,7 +354,9 @@ pub fn run() {
             load_last_project,
             close_project,
             read_directory,
-            read_file_contents
+            read_file_contents,
+            write_file_contents,
+            read_file_binary
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
