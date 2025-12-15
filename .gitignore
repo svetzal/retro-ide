@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+src-tauri/target/
+
+# IDE and editors
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Tauri
+src-tauri/WixTools/
+src-tauri/Cargo.lock
+src-tauri/gen/
+
+# Claude
+.claude/
+
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
