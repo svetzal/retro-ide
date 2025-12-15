@@ -6,6 +6,7 @@
   --text-secondary: #858585;
   --border-color: #3c3c3c;
   --accent-color: #0e639c;
+  --accent-hover: #1177bb;
   --sidebar-width: 200px;
 }
 
@@ -27,8 +28,16 @@ body {
 
 #app {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
+}
+
+/* App Content Area */
+.app-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -42,12 +51,19 @@ body {
 
 .sidebar-header {
   padding: 12px 16px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-content {
@@ -55,8 +71,45 @@ body {
   padding: 12px 16px;
   color: var(--text-secondary);
   font-size: 13px;
+  overflow-y: auto;
 }
 
+/* No Project View */
+.no-project {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  gap: 16px;
+}
+
+.no-project p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.open-project-btn {
+  padding: 8px 16px;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.open-project-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* File Tree */
+.file-tree {
+  font-size: 13px;
+}
+
+/* Main Content */
 .main-content {
   flex: 1;
   display: flex;
@@ -65,8 +118,19 @@ body {
   background-color: var(--bg-primary);
 }
 
-.main-content h1 {
+/* Welcome Screen */
+.welcome-screen {
+  text-align: center;
+}
+
+.welcome-screen h1 {
   font-size: 2rem;
   font-weight: 300;
   color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.welcome-screen p {
+  color: var(--text-secondary);
+  font-size: 14px;
 }

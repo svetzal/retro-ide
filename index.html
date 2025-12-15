@@ -8,13 +8,28 @@
   </head>
   <body>
     <div id="app">
-      <aside class="sidebar">
-        <div class="sidebar-header">Files</div>
-        <div class="sidebar-content">File Tree Here</div>
-      </aside>
-      <main class="main-content">
-        <h1>Hello, Retro World!</h1>
-      </main>
+      <div class="app-content">
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <span class="project-name" id="project-name">No Project</span>
+          </div>
+          <div class="sidebar-content" id="file-browser">
+            <div class="no-project" id="no-project-view">
+              <p>No project folder open</p>
+              <button class="open-project-btn" id="open-project-btn">Open Project</button>
+            </div>
+            <div class="file-tree" id="file-tree" style="display: none;">
+              <!-- File tree will be populated here -->
+            </div>
+          </div>
+        </aside>
+        <main class="main-content">
+          <div class="welcome-screen" id="welcome-screen">
+            <h1>Retro IDE</h1>
+            <p>Open a project folder to get started</p>
+          </div>
+        </main>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
