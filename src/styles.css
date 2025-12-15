@@ -107,20 +107,103 @@ body {
 /* File Tree */
 .file-tree {
   font-size: 13px;
+  padding: 0;
+}
+
+.file-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree-item {
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  gap: 4px;
+  user-select: none;
+}
+
+.file-tree-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.file-tree-row.selected {
+  background-color: var(--accent-color);
+}
+
+.file-tree-row.selected:hover {
+  background-color: var(--accent-hover);
+}
+
+.file-tree-chevron {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.file-tree-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.file-tree-chevron-spacer {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.file-tree-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.file-tree-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.file-tree-error {
+  color: #f44336;
+  padding: 8px;
+  font-size: 12px;
 }
 
 /* Main Content */
 .main-content {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   background-color: var(--bg-primary);
+  overflow: hidden;
 }
 
 /* Welcome Screen */
 .welcome-screen {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 .welcome-screen h1 {
@@ -133,4 +216,43 @@ body {
 .welcome-screen p {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+/* File Viewer */
+.file-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.file-viewer-header {
+  padding: 8px 16px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.file-viewer-filename {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.file-viewer-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.file-viewer-content pre {
+  margin: 0;
+  font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 4;
+}
+
+.file-viewer-content code {
+  color: var(--text-primary);
 }

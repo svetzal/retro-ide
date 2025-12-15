@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::Path;
 use std::sync::Mutex;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{Emitter, State};
@@ -104,6 +106,75 @@ async fn close_project(app: tauri::AppHandle, state: State<'_, AppState>) -> Res
     Ok(())
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FileEntry {
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+    pub children: Option<Vec<FileEntry>>,
+}
+
+#[tauri::command]
+async fn read_directory(path: String) -> Result<Vec<FileEntry>, String> {
+    let path = Path::new(&path);
+
+    if !path.exists() {
+        return Err("Path does not exist".to_string());
+    }
+
+    if !path.is_dir() {
+        return Err("Path is not a directory".to_string());
+    }
+
+    let mut entries: Vec<FileEntry> = Vec::new();
+
+    let read_dir = fs::read_dir(path).map_err(|e| e.to_string())?;
+
+    for entry in read_dir {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let entry_path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        // Skip hidden files and common non-essential directories
+        if name.starts_with('.') {
+            continue;
+        }
+
+        let is_dir = entry_path.is_dir();
+
+        entries.push(FileEntry {
+            name,
+            path: entry_path.to_string_lossy().to_string(),
+            is_dir,
+            children: None, // Children are loaded on demand
+        });
+    }
+
+    // Sort: directories first, then files, both alphabetically
+    entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    });
+
+    Ok(entries)
+}
+
+#[tauri::command]
+async fn read_file_contents(path: String) -> Result<String, String> {
+    let path = Path::new(&path);
+
+    if !path.exists() {
+        return Err("File does not exist".to_string());
+    }
+
+    if !path.is_file() {
+        return Err("Path is not a file".to_string());
+    }
+
+    fs::read_to_string(path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -155,7 +226,9 @@ pub fn run() {
             get_current_project,
             open_project_dialog,
             load_last_project,
-            close_project
+            close_project,
+            read_directory,
+            read_file_contents
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
