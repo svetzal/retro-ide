@@ -20,16 +20,39 @@ export const retroTheme = EditorView.theme({
   ".cm-content": {
     caretColor: "var(--accent-color)",
     padding: "8px 0",
+    paddingBottom: "50%",  // Extra space at bottom for last line selection
+  },
+  ".cm-scroller": {
+    overflow: "auto",
+  },
+  ".cm-line": {
+    paddingRight: "4px",
+    position: "relative",
+    minHeight: "1.4em",
+  },
+  // Selection styling - use both custom layer and native selection
+  ".cm-selectionLayer": {
+    pointerEvents: "none",
+  },
+  // Native selection as fallback
+  ".cm-content ::selection": {
+    backgroundColor: "var(--selection-bg)",
+  },
+  ".cm-line::selection, .cm-line *::selection": {
+    backgroundColor: "var(--selection-bg)",
   },
   ".cm-cursor, .cm-dropCursor": {
     borderLeftColor: "var(--accent-color)",
     borderLeftWidth: "2px",
   },
-  ".cm-selectionBackground, ::selection": {
-    backgroundColor: "var(--selection-bg)",
+  ".cm-selectionBackground": {
+    backgroundColor: "var(--selection-bg) !important",
   },
   "&.cm-focused .cm-selectionBackground": {
-    backgroundColor: "var(--selection-bg)",
+    backgroundColor: "var(--selection-bg) !important",
+  },
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+    backgroundColor: "var(--selection-bg) !important",
   },
   ".cm-activeLine": {
     backgroundColor: "var(--bg-tertiary)",
@@ -161,6 +184,15 @@ export const retroHighlightStyle = HighlightStyle.define([
   { tag: tags.heading, color: "var(--syntax-keyword)", fontWeight: "bold" },
   { tag: tags.heading1, color: "var(--syntax-keyword)", fontWeight: "bold", fontSize: "1.4em" },
   { tag: tags.heading2, color: "var(--syntax-keyword)", fontWeight: "bold", fontSize: "1.2em" },
+
+  // Code/monospace (for markdown inline code and code blocks)
+  {
+    tag: tags.monospace,
+    fontFamily: "var(--code-font)",
+    backgroundColor: "var(--syntax-code-bg)",
+    borderRadius: "3px",
+    padding: "0.1em 0.3em",
+  },
 
   // Emphasis
   { tag: tags.emphasis, fontStyle: "italic" },

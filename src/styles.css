@@ -10,13 +10,18 @@
   --accent-color: #0e639c;
   --accent-hover: #1177bb;
   --sidebar-width: 200px;
-  
+
   /* Editor-specific */
-  --selection-bg: rgba(51, 153, 255, 0.3);
+  --selection-bg: rgba(51, 153, 255, 0.25);
+  --selection-text: inherit;
   --bracket-match-bg: rgba(255, 255, 0, 0.1);
   --search-match-bg: rgba(255, 215, 0, 0.3);
   --search-match-selected-bg: rgba(255, 165, 0, 0.5);
-  
+
+  /* Code blocks (markdown) */
+  --syntax-code-bg: rgba(255, 255, 255, 0.06);
+  --code-font: 'SF Mono', Menlo, Monaco, 'Courier New', monospace;
+
   /* Syntax highlighting - Retro-inspired color scheme */
   --syntax-comment: #6a9955;
   --syntax-string: #ce9178;
@@ -422,7 +427,7 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   background-color: var(--bg-secondary);
   /* Checkerboard background for transparency */
-  background-image: 
+  background-image:
     linear-gradient(45deg, #3c3c3c 25%, transparent 25%),
     linear-gradient(-45deg, #3c3c3c 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #3c3c3c 75%),

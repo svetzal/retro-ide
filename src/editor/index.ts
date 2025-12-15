@@ -1,7 +1,7 @@
 // CodeMirror Editor Wrapper
 // Main editor integration for Retro IDE
 
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from "@codemirror/view";
 import { EditorState, Extension } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo, selectAll } from "@codemirror/commands";
 import { bracketMatching, indentOnInput, syntaxHighlighting, defaultHighlightStyle, foldGutter, foldKeymap } from "@codemirror/language";
@@ -19,14 +19,14 @@ import { asm6809 } from "./languages/asm6809";
 import { basic } from "./languages/basic";
 
 // Language detection based on file extension
-export type LanguageMode = 
-  | "asm6502" 
-  | "asm6809" 
-  | "basic" 
+export type LanguageMode =
+  | "asm6502"
+  | "asm6809"
+  | "basic"
   | "basic-ecb"      // Extended Color BASIC
   | "basic-cbm"      // Commodore BASIC
-  | "c" 
-  | "cpp" 
+  | "c"
+  | "cpp"
   | "python"
   | "shell"
   | "markdown"
@@ -39,17 +39,17 @@ const extensionToLanguage: Record<string, LanguageMode> = {
   "a65": "asm6502",
   "s65": "asm6502",
   "65s": "asm6502",
-  
-  // 6809 Assembly  
+
+  // 6809 Assembly
   "a09": "asm6809",
   "s09": "asm6809",
   "09s": "asm6809",
   "s19": "asm6809",
-  
+
   // Generic assembly (default to 6502)
   "s": "asm6502",
   "inc": "asm6502",
-  
+
   // BASIC variants
   "bas": "basic",
   "basic": "basic",
@@ -57,7 +57,7 @@ const extensionToLanguage: Record<string, LanguageMode> = {
   "coco": "basic-ecb",    // CoCo BASIC
   "cbm": "basic-cbm",     // Commodore BASIC
   "prg": "basic-cbm",     // C64 program (often BASIC)
-  
+
   // C/C++
   "c": "c",
   "h": "c",
@@ -66,23 +66,23 @@ const extensionToLanguage: Record<string, LanguageMode> = {
   "cc": "cpp",
   "hpp": "cpp",
   "hxx": "cpp",
-  
+
   // Python
   "py": "python",
   "pyw": "python",
   "pyi": "python",
-  
+
   // Shell scripts
   "sh": "shell",
   "bash": "shell",
   "zsh": "shell",
   "fish": "shell",
   "ksh": "shell",
-  
+
   // Markdown
   "md": "markdown",
   "markdown": "markdown",
-  
+
   // Plain text
   "txt": "text",
   "json": "text",
@@ -165,27 +165,29 @@ function createBaseExtensions(onSave?: () => void): Extension[] {
     lineNumbers(),
     highlightActiveLineGutter(),
     foldGutter(),
-    
+
     // Selection and cursor
     highlightSpecialChars(),
-    drawSelection(),
+    // Note: We intentionally don't use drawSelection() because it has issues
+    // with selection highlighting on the last line when there's no trailing newline.
+    // Native browser selection works correctly in all cases.
     dropCursor(),
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),
     highlightSelectionMatches(),
-    
+
     // Editing features
     history(),
     indentOnInput(),
     bracketMatching(),
     closeBrackets(),
     autocompletion(),
-    
+
     // Theme
     ...retroThemeExtension,
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-    
+
     // Keymaps
     keymap.of([
       ...closeBracketsKeymap,
@@ -234,7 +236,7 @@ export function createEditor(
 
   const filename = filePath.split("/").pop() ?? filePath;
   const language = detectLanguage(filename);
-  
+
   // Track original content for dirty detection
   const originalContent = content;
   let isDirty = false;
@@ -259,7 +261,7 @@ export function createEditor(
       if (update.docChanged) {
         const currentContent = update.state.doc.toString();
         const newIsDirty = currentContent !== originalContent;
-        
+
         if (newIsDirty !== isDirty) {
           isDirty = newIsDirty;
           if (activeEditor) {
