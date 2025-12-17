@@ -3,9 +3,9 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { 
-  createEditor, 
-  getEditorContent, 
+import {
+  createEditor,
+  getEditorContent,
   markEditorClean,
   getLanguageDisplayName,
   detectLanguage,
@@ -16,7 +16,16 @@ import {
   editorPaste,
   editorSelectAll,
   getActiveEditor,
+  destroyEditor,
 } from "./editor";
+import {
+  initTabManager,
+  openTab,
+  setTabDirty,
+  renderTabs,
+  closeAllTabs,
+  Tab,
+} from "./tabs";
 
 interface ProjectState {
   path: string | null;
@@ -57,21 +66,21 @@ const IMAGE_EXTENSIONS = new Set([
 
 function getEditorType(filename: string): EditorType {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  
+
   if (TEXT_EXTENSIONS.has(ext)) {
     return EditorType.Text;
   }
-  
+
   if (IMAGE_EXTENSIONS.has(ext)) {
     return EditorType.Image;
   }
-  
+
   // Check for extensionless files that are typically text
   const lowerName = filename.toLowerCase();
   if (["makefile", "dockerfile", "readme", "license", "changelog", "authors", "contributing"].includes(lowerName)) {
     return EditorType.Text;
   }
-  
+
   return EditorType.Base;
 }
 
@@ -79,10 +88,18 @@ function getEditorType(filename: string): EditorType {
 let projectNameEl: HTMLElement | null;
 let noProjectView: HTMLElement | null;
 let fileTree: HTMLElement | null;
-let mainContent: HTMLElement | null;
+let editorArea: HTMLElement | null;
+let tabBar: HTMLElement | null;
 
 // State
 let expandedFolders: Set<string> = new Set();
+
+// Editor content cache (for tab switching)
+interface EditorCache {
+  content: string;
+  scrollTop: number;
+}
+const editorContentCache: Map<string, EditorCache> = new Map();
 
 async function openProject(): Promise<void> {
   try {
@@ -136,7 +153,12 @@ function updateProjectUI(project: ProjectState): void {
     }
   }
 
-  // Reset main content to welcome screen when project changes
+  // Close all tabs and reset content when project changes
+  closeAllTabs();
+  editorContentCache.clear();
+  if (tabBar) {
+    renderTabs(tabBar);
+  }
   showWelcomeScreen();
 }
 
@@ -287,7 +309,7 @@ async function toggleFolder(entry: FileEntry, li: HTMLLIElement, depth: number):
 }
 
 async function openFile(entry: FileEntry): Promise<void> {
-  if (!mainContent) return;
+  if (!editorArea) return;
 
   // Highlight selected file in tree
   document.querySelectorAll(".file-tree-row.selected").forEach(el => {
@@ -299,6 +321,22 @@ async function openFile(entry: FileEntry): Promise<void> {
   }
 
   const editorType = getEditorType(entry.name);
+
+  // Map editor type to tab type
+  const tabType = editorType === EditorType.Text ? "text" 
+    : editorType === EditorType.Image ? "image" 
+    : "base";
+
+  // Save current editor content before switching
+  saveCurrentEditorToCache();
+
+  // Open or activate tab
+  openTab(entry.path, entry.name, tabType);
+
+  // Re-render tabs
+  if (tabBar) {
+    renderTabs(tabBar);
+  }
 
   try {
     switch (editorType) {
@@ -321,16 +359,12 @@ async function openFile(entry: FileEntry): Promise<void> {
 
 // Base Editor - shows just the filename (fallback for unknown types)
 function openBaseEditor(entry: FileEntry): void {
-  if (!mainContent) return;
+  if (!editorArea) return;
 
   const ext = entry.name.split(".").pop()?.toLowerCase() ?? "unknown";
-  
-  mainContent.innerHTML = `
+
+  editorArea.innerHTML = `
     <div class="editor-container base-editor">
-      <div class="editor-header">
-        <span class="editor-filename">${escapeHtml(entry.name)}</span>
-        <span class="editor-type-badge">Unknown Type</span>
-      </div>
       <div class="editor-content centered">
         <div class="file-info">
           <div class="file-icon-large">📄</div>
@@ -346,41 +380,46 @@ function openBaseEditor(entry: FileEntry): void {
 
 // Text Editor - CodeMirror integration
 async function openTextEditor(entry: FileEntry): Promise<void> {
-  if (!mainContent) return;
+  if (!editorArea) return;
 
-  const content = await invoke<string>("read_file_contents", { path: entry.path });
+  // Check if we have cached content for this file
+  const cached = editorContentCache.get(entry.path);
+  let content: string;
+  
+  if (cached) {
+    content = cached.content;
+  } else {
+    content = await invoke<string>("read_file_contents", { path: entry.path });
+  }
+  
   const language = detectLanguage(entry.name);
   const languageName = getLanguageDisplayName(language);
-  
-  // Create container structure
-  mainContent.innerHTML = `
+
+  // Create container structure (without header - tabs show filename now)
+  editorArea.innerHTML = `
     <div class="editor-container text-editor">
-      <div class="editor-header">
-        <span class="editor-filename" id="editor-filename">${escapeHtml(entry.name)}</span>
+      <div class="editor-status-bar">
         <span class="editor-type-badge">${escapeHtml(languageName)}</span>
       </div>
       <div class="editor-content" id="codemirror-container">
       </div>
     </div>
   `;
-  
+
   const container = document.getElementById("codemirror-container");
-  const filenameEl = document.getElementById("editor-filename");
-  
+
   if (!container) return;
-  
+
   // Create CodeMirror editor
   createEditor(container, content, entry.path, {
     onSave: async () => {
       await saveCurrentFile(entry.path);
     },
     onChange: (isDirty) => {
-      if (filenameEl) {
-        if (isDirty) {
-          filenameEl.classList.add("dirty");
-        } else {
-          filenameEl.classList.remove("dirty");
-        }
+      // Update tab dirty state
+      setTabDirty(entry.path, isDirty);
+      if (tabBar) {
+        renderTabs(tabBar);
       }
     },
   });
@@ -391,18 +430,28 @@ async function saveCurrentFile(filePath?: string): Promise<void> {
   // If no path provided, get it from the active editor
   const editor = getActiveEditor();
   const path = filePath ?? editor?.filePath;
-  
+
   if (!path) {
     console.log("No file to save");
     return;
   }
-  
+
   const content = getEditorContent();
   if (content === null) return;
-  
+
   try {
     await invoke("write_file_contents", { path, contents: content });
     markEditorClean();
+    
+    // Update tab dirty state and re-render
+    setTabDirty(path, false);
+    if (tabBar) {
+      renderTabs(tabBar);
+    }
+    
+    // Update cache with saved content
+    editorContentCache.set(path, { content, scrollTop: 0 });
+    
     console.log("File saved:", path);
   } catch (error) {
     console.error("Failed to save file:", error);
@@ -412,17 +461,13 @@ async function saveCurrentFile(filePath?: string): Promise<void> {
 
 // Image Editor - displays image files
 async function openImageEditor(entry: FileEntry): Promise<void> {
-  if (!mainContent) return;
+  if (!editorArea) return;
 
   const fileData = await invoke<FileData>("read_file_binary", { path: entry.path });
   const dataUrl = `data:${fileData.mime_type};base64,${fileData.data}`;
-  
-  mainContent.innerHTML = `
+
+  editorArea.innerHTML = `
     <div class="editor-container image-editor">
-      <div class="editor-header">
-        <span class="editor-filename">${escapeHtml(entry.name)}</span>
-        <span class="editor-type-badge">Image</span>
-      </div>
       <div class="editor-content centered">
         <div class="image-viewer">
           <img src="${dataUrl}" alt="${escapeHtml(entry.name)}" />
@@ -433,15 +478,11 @@ async function openImageEditor(entry: FileEntry): Promise<void> {
 }
 
 // Error display
-function displayError(filename: string, message: string): void {
-  if (!mainContent) return;
+function displayError(_filename: string, message: string): void {
+  if (!editorArea) return;
 
-  mainContent.innerHTML = `
+  editorArea.innerHTML = `
     <div class="editor-container error-view">
-      <div class="editor-header">
-        <span class="editor-filename">${escapeHtml(filename)}</span>
-        <span class="editor-type-badge error">Error</span>
-      </div>
       <div class="editor-content centered">
         <div class="error-message">
           <div class="error-icon">⚠️</div>
@@ -453,14 +494,92 @@ function displayError(filename: string, message: string): void {
 }
 
 function showWelcomeScreen(): void {
-  if (!mainContent) return;
+  if (!editorArea) return;
 
-  mainContent.innerHTML = `
+  editorArea.innerHTML = `
     <div class="welcome-screen">
       <h1>Retro IDE</h1>
       <p>Select a file from the sidebar to view its contents</p>
     </div>
   `;
+}
+
+// Save current editor content to cache before switching tabs
+function saveCurrentEditorToCache(): void {
+  const editor = getActiveEditor();
+  if (editor) {
+    const content = getEditorContent();
+    if (content !== null) {
+      editorContentCache.set(editor.filePath, {
+        content,
+        scrollTop: 0, // Could save scroll position here
+      });
+    }
+  }
+}
+
+// Handle tab change - reload the file content
+async function handleTabChange(tab: Tab | null): Promise<void> {
+  if (!tab) {
+    showWelcomeScreen();
+    return;
+  }
+
+  // Highlight file in tree
+  document.querySelectorAll(".file-tree-row.selected").forEach(el => {
+    el.classList.remove("selected");
+  });
+  const row = document.querySelector(`.file-tree-row[data-path="${CSS.escape(tab.filePath)}"]`);
+  if (row) {
+    row.classList.add("selected");
+  }
+
+  // Save current editor before switching
+  saveCurrentEditorToCache();
+
+  // Open the file based on type
+  const entry: FileEntry = {
+    name: tab.filename,
+    path: tab.filePath,
+    is_dir: false,
+  };
+
+  try {
+    switch (tab.type) {
+      case "text":
+        await openTextEditor(entry);
+        break;
+      case "image":
+        await openImageEditor(entry);
+        break;
+      case "base":
+      default:
+        openBaseEditor(entry);
+        break;
+    }
+  } catch (error) {
+    console.error("Failed to switch to tab:", error);
+    displayError(tab.filename, `Failed to open file: ${error}`);
+  }
+}
+
+// Handle tab close - check for unsaved changes
+function handleTabClose(tab: Tab): boolean {
+  if (tab.isDirty) {
+    // For now, just warn via console. Could add a confirmation dialog.
+    console.warn(`Closing tab with unsaved changes: ${tab.filename}`);
+  }
+  
+  // Remove from cache
+  editorContentCache.delete(tab.filePath);
+  
+  // If this was the current editor, destroy it
+  const editor = getActiveEditor();
+  if (editor?.filePath === tab.filePath) {
+    destroyEditor();
+  }
+  
+  return true;
 }
 
 function escapeHtml(text: string): string {
@@ -524,7 +643,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   projectNameEl = document.getElementById("project-name");
   noProjectView = document.getElementById("no-project-view");
   fileTree = document.getElementById("file-tree");
-  mainContent = document.querySelector(".main-content");
+  editorArea = document.getElementById("editor-area");
+  tabBar = document.getElementById("tab-bar");
+
+  // Initialize tab manager
+  initTabManager({
+    onTabChange: (tab) => {
+      handleTabChange(tab);
+      if (tabBar) {
+        renderTabs(tabBar);
+      }
+    },
+    onTabClose: handleTabClose,
+    onTabsChange: () => {
+      if (tabBar) {
+        renderTabs(tabBar);
+      }
+    },
+  });
 
   // Setup event listeners
   setupEventListeners();

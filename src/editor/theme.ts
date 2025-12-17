@@ -106,6 +106,18 @@ export const retroTheme = EditorView.theme({
   ".cm-panels.cm-panels-bottom": {
     borderTop: "1px solid var(--border-color)",
   },
+  // Markdown fenced code blocks - full line background
+  ".cm-codeblock-line": {
+    backgroundColor: "var(--syntax-code-bg)",
+    fontFamily: "var(--code-font)",
+  },
+  // Inline code styling (backticks)
+  ".tok-monospace": {
+    backgroundColor: "var(--syntax-code-bg)",
+    fontFamily: "var(--code-font)",
+    borderRadius: "3px",
+    padding: "0.1em 0.3em",
+  },
 });
 
 // Syntax highlighting colors

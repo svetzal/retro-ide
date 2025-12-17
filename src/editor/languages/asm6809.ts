@@ -156,7 +156,7 @@ function tokenize6809(stream: StringStream): string | null {
   }
 
   // Hex numbers ($xx or &H or 0x)
-  if (stream.match(/^\$[0-9A-Fa-f]+/) || 
+  if (stream.match(/^\$[0-9A-Fa-f]+/) ||
       stream.match(/^&[Hh][0-9A-Fa-f]+/) ||
       stream.match(/^0x[0-9A-Fa-f]+/i)) {
     return "number";

@@ -54,7 +54,7 @@ const ecbKeywords = new Set([
   "CSAVE", "CLOAD", "LLIST", "LPRINT",
 ]);
 
-// Commodore BASIC specific keywords  
+// Commodore BASIC specific keywords
 const commodoreKeywords = new Set([
   // Graphics/Screen
   "COLOR", "GRAPHIC", "SCNCLR", "CHAR", "BOX", "CIRCLE", "DRAW", "PAINT",
@@ -182,7 +182,7 @@ function tokenizeBasic(stream: StringStream, state: BasicState): string | null {
   // Keywords and identifiers
   if (stream.match(/^[A-Za-z][A-Za-z0-9]*/)) {
     const word = stream.current().toUpperCase();
-    
+
     // Check for function followed by $ (string functions)
     if (stream.peek() === "$") {
       stream.next();
@@ -192,7 +192,7 @@ function tokenizeBasic(stream: StringStream, state: BasicState): string | null {
       }
       stream.backUp(1);
     }
-    
+
     if (allKeywords.has(word)) {
       return "keyword";
     }

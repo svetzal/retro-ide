@@ -218,11 +218,11 @@ In [src/editor/index.ts](src/editor/index.ts), the editor is configured with:
 ### Custom Language Modes
 Located in `src/editor/languages/`, these use CodeMirror's `StreamLanguage` for simpler token-based parsing:
 
-| Language | File | Supported Features |
-|----------|------|-------------------|
+| Language      | File         | Supported Features                                                      |
+| ------------- | ------------ | ----------------------------------------------------------------------- |
 | 6502 Assembly | `asm6502.ts` | MOS 6502 + 65C02 opcodes, common assembler directives, labels, comments |
-| 6809 Assembly | `asm6809.ts` | MC6809 + HD6309 opcodes, LWASM/AS9 directives, labels |
-| BASIC | `basic.ts` | MS BASIC, Extended Color BASIC, Commodore BASIC keywords |
+| 6809 Assembly | `asm6809.ts` | MC6809 + HD6309 opcodes, LWASM/AS9 directives, labels                   |
+| BASIC         | `basic.ts`   | MS BASIC, Extended Color BASIC, Commodore BASIC keywords                |
 
 ### File Extension Mapping
 Language detection in `detectLanguage()`:

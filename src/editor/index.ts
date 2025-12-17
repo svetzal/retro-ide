@@ -14,6 +14,7 @@ import { StreamLanguage } from "@codemirror/language";
 import { shell } from "@codemirror/legacy-modes/mode/shell";
 
 import { retroThemeExtension } from "./theme";
+import { markdownCodeBlockHighlighter } from "./markdown-codeblocks";
 import { asm6502 } from "./languages/asm6502";
 import { asm6809 } from "./languages/asm6809";
 import { basic } from "./languages/basic";
@@ -118,7 +119,7 @@ function getLanguageExtension(mode: LanguageMode): Extension {
     case "shell":
       return StreamLanguage.define(shell);
     case "markdown":
-      return markdown();
+      return [markdown(), markdownCodeBlockHighlighter()];
     case "text":
     default:
       return [];
@@ -318,6 +319,14 @@ export function markEditorClean(): void {
   if (activeEditor) {
     activeEditor.isDirty = false;
     onContentChange?.(false);
+  }
+}
+
+// Destroy the current editor
+export function destroyEditor(): void {
+  if (activeEditor) {
+    activeEditor.destroy();
+    activeEditor = null;
   }
 }
 
