@@ -324,3 +324,53 @@ Release binaries bundle to:
 - macOS: `.app`, `.dmg`
 - Windows: `.msi`, `.exe`
 - Linux: `.deb`, `.AppImage`
+
+## Release Process
+
+### Version Locations
+Version must be updated in **three places** (keep them in sync):
+- `package.json` → `"version": "X.Y.Z"`
+- `src-tauri/tauri.conf.json` → `"version": "X.Y.Z"`
+- `src-tauri/Cargo.toml` → `version = "X.Y.Z"`
+
+### Creating a Release
+
+1. **Update version numbers** in all three files above
+2. **Commit the version bump**: `git commit -am "Bump version to vX.Y.Z"`
+3. **Create and push the tag**:
+   ```bash
+   git tag vX.Y.Z
+   git push origin main --tags
+   ```
+4. **GitHub Actions** automatically:
+   - Builds for macOS (arm64 + x64), Linux, and Windows
+   - Creates a **draft GitHub release** with binaries attached
+5. **Publish the release** on GitHub (edit draft, add release notes, publish)
+
+### Release Types (Semantic Versioning)
+
+| Type  | When to use                                      | Example         |
+|-------|--------------------------------------------------|-----------------|
+| Patch | Bug fixes, minor tweaks, no new features         | 0.1.0 → 0.1.1   |
+| Minor | New features, backward-compatible changes        | 0.1.0 → 0.2.0   |
+| Major | Breaking changes, major rewrites                 | 0.1.0 → 1.0.0   |
+
+### Quick Commands for Agents
+
+**Patch release** (e.g., 0.1.0 → 0.1.1):
+```bash
+# Update versions in package.json, tauri.conf.json, Cargo.toml
+git commit -am "Bump version to v0.1.1"
+git tag v0.1.1
+git push origin main --tags
+```
+
+### Pre-Release Quality Checks
+
+Before creating a release tag, ensure:
+- [ ] `npm run check` passes (TypeScript)
+- [ ] `cargo clippy -- -D warnings` passes (Rust lints)
+- [ ] `cargo test` passes (Rust tests)
+- [ ] App runs successfully with `npm run tauri dev`
+
+*(Additional quality checks will be added as the project matures)*

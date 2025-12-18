@@ -35,9 +35,6 @@ export type LanguageMode =
   | "markdown"
   | "text";
 
-// File types that depend on project mode
-type ModeAwareFileType = "asm" | "basic";
-
 // File extension to language mapping
 // Simplified: .asm = assembly, .bas = BASIC (dialect from project mode)
 const extensionToLanguage: Record<string, LanguageMode> = {
