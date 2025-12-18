@@ -20,7 +20,7 @@ export const PROJECT_MODES: Record<ProjectMode, ProjectModeConfig> = {
     description: "MOS 6502/6510 assembly, Commodore BASIC V2",
     assemblyDialect: "asm6502",
     basicDialect: "basic-cbm",
-    icon: "/images/c64-icon.svg",
+    icon: "/images/c64-icon.png",
   },
   coco: {
     id: "coco",
@@ -28,7 +28,7 @@ export const PROJECT_MODES: Record<ProjectMode, ProjectModeConfig> = {
     description: "Motorola 6809 assembly, Extended Color BASIC",
     assemblyDialect: "asm6809",
     basicDialect: "basic-ecb",
-    icon: "/images/coco-icon.svg",
+    icon: "/images/coco-icon.png",
   },
 };
 
@@ -41,7 +41,7 @@ export function initProjectMode(options?: {
   onModeChange?: (mode: ProjectMode) => void;
 }): void {
   onModeChange = options?.onModeChange ?? null;
-  
+
   // Load saved mode from localStorage
   const savedMode = localStorage.getItem("retro-ide-project-mode");
   if (savedMode && isValidMode(savedMode)) {

@@ -98,7 +98,6 @@ let editorArea: HTMLElement | null;
 let tabBar: HTMLElement | null;
 let modeIndicator: HTMLElement | null;
 let modeIcon: HTMLImageElement | null;
-let modeName: HTMLElement | null;
 
 // State
 let expandedFolders: Set<string> = new Set();
@@ -606,10 +605,6 @@ function updateModeIndicator(): void {
     modeIcon.alt = config.name;
   }
   
-  if (modeName) {
-    modeName.textContent = config.name;
-  }
-  
   if (modeIndicator) {
     modeIndicator.title = `${config.name}\n${config.description}\nClick to change`;
   }
@@ -690,7 +685,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   tabBar = document.getElementById("tab-bar");
   modeIndicator = document.getElementById("mode-indicator");
   modeIcon = document.getElementById("mode-icon") as HTMLImageElement | null;
-  modeName = document.getElementById("mode-name");
 
   // Initialize project mode system
   initProjectMode({
