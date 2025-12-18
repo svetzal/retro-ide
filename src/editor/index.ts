@@ -18,12 +18,14 @@ import { markdownCodeBlockHighlighter } from "./markdown-codeblocks";
 import { asm6502 } from "./languages/asm6502";
 import { asm6809 } from "./languages/asm6809";
 import { basic } from "./languages/basic";
+import { getAssemblyDialect, getBasicDialect, getCurrentModeConfig } from "../projectMode";
 
 // Language detection based on file extension
 export type LanguageMode =
+  | "asm"            // Assembly - dialect determined by project mode
   | "asm6502"
   | "asm6809"
-  | "basic"
+  | "basic"          // BASIC - dialect determined by project mode
   | "basic-ecb"      // Extended Color BASIC
   | "basic-cbm"      // Commodore BASIC
   | "c"
@@ -33,31 +35,19 @@ export type LanguageMode =
   | "markdown"
   | "text";
 
+// File types that depend on project mode
+type ModeAwareFileType = "asm" | "basic";
+
 // File extension to language mapping
+// Simplified: .asm = assembly, .bas = BASIC (dialect from project mode)
 const extensionToLanguage: Record<string, LanguageMode> = {
-  // 6502 Assembly
-  "asm": "asm6502",
-  "a65": "asm6502",
-  "s65": "asm6502",
-  "65s": "asm6502",
+  // Assembly - project mode determines dialect
+  "asm": "asm",
+  "s": "asm",
+  "inc": "asm",
 
-  // 6809 Assembly
-  "a09": "asm6809",
-  "s09": "asm6809",
-  "09s": "asm6809",
-  "s19": "asm6809",
-
-  // Generic assembly (default to 6502)
-  "s": "asm6502",
-  "inc": "asm6502",
-
-  // BASIC variants
+  // BASIC - project mode determines dialect  
   "bas": "basic",
-  "basic": "basic",
-  "ecb": "basic-ecb",     // Extended Color BASIC
-  "coco": "basic-ecb",    // CoCo BASIC
-  "cbm": "basic-cbm",     // Commodore BASIC
-  "prg": "basic-cbm",     // C64 program (often BASIC)
 
   // C/C++
   "c": "c",
@@ -100,9 +90,24 @@ export function detectLanguage(filename: string): LanguageMode {
   return extensionToLanguage[ext] ?? "text";
 }
 
+// Resolve mode-aware language to specific dialect based on project mode
+function resolveLanguageDialect(mode: LanguageMode): LanguageMode {
+  if (mode === "asm") {
+    return getAssemblyDialect();
+  }
+  if (mode === "basic") {
+    return getBasicDialect();
+  }
+  return mode;
+}
+
 // Get language extension for CodeMirror
 function getLanguageExtension(mode: LanguageMode): Extension {
-  switch (mode) {
+  // Resolve mode-aware types to their specific dialect
+  const resolvedMode = resolveLanguageDialect(mode);
+  
+  switch (resolvedMode) {
+    case "asm":
     case "asm6502":
       return asm6502();
     case "asm6809":
@@ -128,10 +133,15 @@ function getLanguageExtension(mode: LanguageMode): Extension {
 
 // Language mode display names
 export function getLanguageDisplayName(mode: LanguageMode): string {
+  // Resolve mode-aware types to show actual dialect
+  const resolvedMode = resolveLanguageDialect(mode);
+  const modeConfig = getCurrentModeConfig();
+  
   const names: Record<LanguageMode, string> = {
+    "asm": `Assembly (${modeConfig.name})`,
     "asm6502": "6502 Assembly",
     "asm6809": "6809 Assembly",
-    "basic": "BASIC",
+    "basic": `BASIC (${modeConfig.name})`,
     "basic-ecb": "Extended Color BASIC",
     "basic-cbm": "Commodore BASIC",
     "c": "C",
@@ -141,7 +151,7 @@ export function getLanguageDisplayName(mode: LanguageMode): string {
     "markdown": "Markdown",
     "text": "Plain Text",
   };
-  return names[mode];
+  return names[mode] ?? names[resolvedMode];
 }
 
 // Editor instance manager

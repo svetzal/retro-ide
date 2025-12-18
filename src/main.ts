@@ -26,6 +26,12 @@ import {
   closeAllTabs,
   Tab,
 } from "./tabs";
+import {
+  initProjectMode,
+  getCurrentModeConfig,
+  toggleProjectMode,
+  ProjectMode,
+} from "./projectMode";
 
 interface ProjectState {
   path: string | null;
@@ -90,6 +96,9 @@ let noProjectView: HTMLElement | null;
 let fileTree: HTMLElement | null;
 let editorArea: HTMLElement | null;
 let tabBar: HTMLElement | null;
+let modeIndicator: HTMLElement | null;
+let modeIcon: HTMLImageElement | null;
+let modeName: HTMLElement | null;
 
 // State
 let expandedFolders: Set<string> = new Set();
@@ -588,11 +597,45 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
+// Update mode indicator UI
+function updateModeIndicator(): void {
+  const config = getCurrentModeConfig();
+  
+  if (modeIcon) {
+    modeIcon.src = config.icon;
+    modeIcon.alt = config.name;
+  }
+  
+  if (modeName) {
+    modeName.textContent = config.name;
+  }
+  
+  if (modeIndicator) {
+    modeIndicator.title = `${config.name}\n${config.description}\nClick to change`;
+  }
+}
+
+// Handle mode change - refresh editors to use new dialect
+function handleModeChange(_mode: ProjectMode): void {
+  updateModeIndicator();
+  
+  // TODO: Could refresh open editors to apply new language mode
+  // For now, new files opened will use the new mode
+  console.log("Project mode changed to:", getCurrentModeConfig().name);
+}
+
 function setupEventListeners(): void {
   // Open Project button in sidebar
   const openProjectBtn = document.getElementById("open-project-btn");
   if (openProjectBtn) {
     openProjectBtn.addEventListener("click", openProject);
+  }
+  
+  // Mode indicator click to toggle
+  if (modeIndicator) {
+    modeIndicator.addEventListener("click", () => {
+      toggleProjectMode();
+    });
   }
 }
 
@@ -645,6 +688,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   fileTree = document.getElementById("file-tree");
   editorArea = document.getElementById("editor-area");
   tabBar = document.getElementById("tab-bar");
+  modeIndicator = document.getElementById("mode-indicator");
+  modeIcon = document.getElementById("mode-icon") as HTMLImageElement | null;
+  modeName = document.getElementById("mode-name");
+
+  // Initialize project mode system
+  initProjectMode({
+    onModeChange: handleModeChange,
+  });
+  updateModeIndicator();
 
   // Initialize tab manager
   initTabManager({
